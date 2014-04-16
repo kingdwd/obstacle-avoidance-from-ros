@@ -1,0 +1,9 @@
+<launch>
+<!-- ASCTEC-SPECIFIC PLOTS -->
+  <arg name="rxplot_opts" value="-p 60 -b 90 -m . -r 0.5"/>
+
+  <node pkg="rxtools" type="rxplot" name="plots_autopilot_input" args="
+      asctec/CTRL_INPUT/roll:pitch:yaw:thrust
+      $(arg rxplot_opts) -P -t 'AscTec CTRL_INPUT'"/>
+      
+</launch>

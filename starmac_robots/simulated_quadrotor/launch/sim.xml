@@ -1,0 +1,15 @@
+<launch>
+  <arg name="model" default="simple_nonlinear"/>
+  <arg name="publish_odometry" default="true"/>
+  <arg name="sim_odom_topic" default="odom"/>
+  <arg name="publish_state" default="false"/>
+  <arg name="rate" default="40.0"/>
+  <node pkg="simulated_quadrotor" type="sim_adapter.py" name="sim_adapter">
+    <param name="model" value="$(arg model)"/>
+    <param name="rate" value="$(arg rate)"/>
+    <param name="publish_odometry" value="$(arg publish_odometry)"/>
+    <param name="sim_odom_topic" value="$(arg sim_odom_topic)"/>
+    <param name="publish_state_estimate" value="$(arg publish_state)"/>
+    <rosparam param="gaussian_accel_noise_covariance">[0.02, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.02]</rosparam>
+  </node>
+</launch>

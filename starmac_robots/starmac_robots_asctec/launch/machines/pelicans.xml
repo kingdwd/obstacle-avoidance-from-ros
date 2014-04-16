@@ -1,0 +1,149 @@
+<launch>
+    <!-- 
+    pelicans.xml
+    
+    Machine definitions for AscTec Pelicans in Hybrid Systems Lab
+    -->
+     
+    <!-- distros: -->
+    <arg name="ros_cturtle" value="/opt/ros/cturtle"/>
+    <arg name="ros_diamondback" value="/opt/ros/diamondback"/>
+    <arg name="ros_electric" value="/opt/ros/electric"/>
+    <arg name="ros_unstable" value="/opt/ros/unstable"/>
+    <arg name="ros_distro" default="$(arg ros_electric)"/> <!-- pick one... -->
+    <!-- useful paths -->
+    <arg name="ros_root" value="$(arg ros_distro)/ros"/>
+    <!-- assemble ros-package-path for pelicans: -->
+    <arg name="pelican_ros_package_path" 
+         value="$(env ROS_PACKAGE_PATH)"/> <!-- keep it simple - must have same path on local and pelican -->
+    
+    <!-- PELICAN1 -->
+    <machine name="pelican1" address="pelican1" 
+             user="$(env USER)" 
+             env-loader="$(env HOME)/ros/starmac-ros-pkg/scripts/env-loader.sh"
+             >
+    </machine>
+    <group ns="pelican1">
+        <!-- values with Kinect mounted:
+        <param name="asctec_adapter/nominal_thrust" value="2200"/>
+        <param name="asctec_adapter/max_thrust" value="2500"/>
+        -->
+        <param name="asctec_adapter/nominal_thrust" value="1925"/>
+        <param name="asctec_adapter/max_thrust" value="2200"/>
+        <rosparam>
+          frames: {
+            vicon_to_imu: {
+              parent: flyer_vicon,
+              child: flyer_imu,
+              translation: [-0.05, 0, -0.3593],
+              rotation: [0, 90, 0]
+              },
+            imu_to_openni_depth_optical: {
+              parent: flyer_imu,
+              child: openni_depth_optical_frame,
+              translation: [0, 0, -0.05],
+              rotation: [45, 0, 65]
+              }
+          }
+        </rosparam>
+    </group>
+    
+    <!-- PELICAN2 -->
+    <machine name="pelican2" address="pelican2" 
+             user="$(env USER)" 
+             env-loader="$(env HOME)/ros/starmac-ros-pkg/scripts/env-loader.sh"
+            >
+    </machine>
+    <rosparam>
+    vicon:
+        pelican2:
+            pelican2:
+                zero_pose:
+                  orientation: {w: 0.49357382910776698, x: 0.51104330407480469, y: 0.49580369390519474,
+                    z: -0.4993979512274429}
+                  position: {x: 0.0041905388936118622, y: -0.032898217077008171, z: 0.25456000536231899}
+    </rosparam>
+    <group ns="pelican2">
+        <param name="asctec_adapter/nominal_thrust" value="1800"/>
+        <param name="asctec_adapter/max_thrust" value="2200"/>
+        <rosparam>
+          frames/vicon_to_imu: {
+              parent: flyer_vicon,
+              child: flyer_imu,
+              #translation: [-0.05, 0, -0.3593],
+              #rotation: [0, 90, 0],
+              translation: [0, 0, 0.20],
+              rotation: [90, 0, 180],
+              rot_type: euler_rzyx, 
+              rot_unit: deg
+              }
+        </rosparam>
+        
+    </group>
+    
+    <!-- PELICAN3 -->
+    <machine name="pelican3" address="pelican3" 
+             user="$(env USER)" 
+             env-loader="$(env HOME)/ros/starmac-ros-pkg/scripts/env-loader.sh"
+            >
+    </machine>
+    <!--  rosparam>
+    vicon:
+      pelican3:
+        pelican3:
+          zero_pose:
+            orientation: {w: -0.030212893086439718, x: 0.711471779745386, y: -0.02015580903319207,
+              z: -0.701775484809421}
+            position: {x: -0.05203150431741087, y: 0.013362151594310598, z: 0.2663336941328182}
+
+    </rosparam -->
+    <rosparam>
+    vicon:
+      pelican3:
+        pelican3:
+          zero_pose:
+            orientation: {w: 0.6556304590460063, x: 0.26808867085228866, y: 0.6555171893508487, z: -0.2618671040763619}
+            position: {x: 0.010581602770360228, y: -0.03917397832544366, z: 0.2536336091589707}
+    </rosparam>
+    <group ns="pelican3">
+        <param name="asctec_adapter/nominal_thrust" value="1800"/>
+        <param name="asctec_adapter/max_thrust" value="2200"/>
+        <rosparam>
+          frames/vicon_to_imu: {
+              parent: flyer_vicon,
+              child: flyer_imu,
+              #translation: [-0.05, 0, -0.3593],
+              #rotation: [0, 90, 0],
+              translation: [0, 0, 0.20],
+              rotation: [90, 0, 180],
+              rot_type: euler_rzyx, 
+              rot_unit: deg
+              }
+        </rosparam>
+        
+    </group>
+    
+    
+    <!-- PELICAN4 -->
+    <machine name="pelican4" address="pelican4" 
+             user="$(env USER)" 
+             env-loader="$(env HOME)/ros/starmac-ros-pkg/scripts/env-loader.sh"
+                >
+    </machine>
+    <group ns="pelican4">
+        <param name="asctec_adapter/nominal_thrust" value="1800"/>
+        <param name="asctec_adapter/max_thrust" value="2200"/>
+        <rosparam>
+          frames: {
+            vicon_to_imu: {
+              parent: flyer_vicon,
+              child: flyer_imu,
+              translation: [-0.05, 0, -0.35], # pelican4 has big balls..
+              rotation: [0, 90, 0]
+              }
+          }
+        </rosparam>
+    </group>
+    
+
+</launch>

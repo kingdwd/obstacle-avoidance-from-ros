@@ -1,0 +1,12 @@
+<launch>
+
+  <node pkg="nodelet" type="nodelet" name="manager" args="manager" 
+  launch-prefix="xterm -e gdb -x ~/gdbrun -args" 
+  output="screen"/>
+
+  <node pkg="nodelet" type="nodelet" args="load starmac_tools/MuxNodelet manager" 
+  name="mux" 
+  output="screen"
+  />
+
+</launch>

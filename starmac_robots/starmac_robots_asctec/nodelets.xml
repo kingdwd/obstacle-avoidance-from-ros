@@ -1,0 +1,11 @@
+<library path="lib/libstarmac_robots_asctec">
+  <class name="starmac_robots_asctec/AscTecHLInterfaceAdapterNodelet" 
+         type="starmac_robots_asctec::AscTecHLInterfaceAdapterNodelet" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Acts as go-between from rest of starmac-ros-pkg code and asctec_hl_interface
+      from asctec_mav_framework
+    </description>
+  </class>
+
+</library>

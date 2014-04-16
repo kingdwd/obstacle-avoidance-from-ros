@@ -1,0 +1,33 @@
+<launch>
+  <arg name="name" default="manager" />
+  <arg name="machine" default="local"/>
+  <arg name="run_in_gdb" default="false"/>
+  <arg name="gdb_use_screen" default="false"/>
+  <arg name="num_worker_threads" default="40"/>
+
+  <!-- for debugging: 
+      launch-prefix="xterm -e gdb -x ~/gdbrun -args" 
+       or:  
+      launch-prefix="screen -d -m gdb -x ~/gdbrun -args" -->
+  <group if="$(arg run_in_gdb)">
+    <node unless="$(arg gdb_use_screen)" pkg="nodelet" type="nodelet" name="$(arg name)" 
+          args="manager" machine="$(arg machine)"
+          launch-prefix="xterm -e gdb -x $(find flyer_common)/../../scripts/gdbrun -args">
+          <param name="num_worker_threads" value="$(arg num_worker_threads)"/>
+    </node>
+    <node if="$(arg gdb_use_screen)" pkg="nodelet" type="nodelet" name="$(arg name)" 
+          args="manager" machine="$(arg machine)"
+          launch-prefix="screen -d -m gdb -x $(find flyer_common)/../../scripts/gdbrun -args">
+          <param name="num_worker_threads" value="$(arg num_worker_threads)"/>
+    </node>
+  
+  </group>
+  <group unless="$(arg run_in_gdb)">
+    <node pkg="nodelet" type="nodelet" name="$(arg name)" 
+          args="manager" machine="$(arg machine)"
+          >
+          <param name="num_worker_threads" value="$(arg num_worker_threads)"/>
+    </node>
+  </group>
+
+</launch>

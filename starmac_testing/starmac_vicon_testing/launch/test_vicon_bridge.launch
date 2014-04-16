@@ -1,0 +1,34 @@
+<launch>
+
+  <!-- MACHINE DEFINITIONS -->
+  <group>
+    <include file="$(find flyer_common)/launch/machines/local.xml"/>
+    <include file="$(find flyer_common)/launch/machines/lab_machines.xml"/>
+    <!-- include file="$(find starmac_robots_asctec)/launch/machines/pelicans.xml"/-->
+  </group>
+
+    <node pkg="vicon_bridge" type="vicon_bridge" name="vicon" machine="vicon-bridge" output="screen">
+        <param name="stream_mode" value="ClientPull" type="str" />
+        <!--param name="datastream_hostport" value="192.168.0.13:801" type="str" /-->
+        <param name="datastream_hostport" value="vicon:801" type="str" />
+        <param name="tf_ref_frame_id" value="/enu" type="str" />
+        </node>
+
+    <!--  <rosparam>
+    vicon:
+        pelican2:
+            pelican2:
+                zero_pose:
+                    orientation: {w: 0.50764295925857639, x: 0.47726645313958432, y: 0.51589194417030915,
+                                    z: -0.49836819778446434}
+                    position: {x: -0.0018433752106591231, y: -0.028354093786360959, z: 0.032985034896713034}
+        hat1:
+          hat1:
+            zero_pose:
+              orientation: {w: 0.79759443649325235, x: -0.54856014775520667, y: -0.13726054419697023,
+                z: 0.20996290666817483}
+              position: {x: 0.0031059486171907524, y: 0.0031530180312875238, z: 0.113407000844507}
+    </rosparam>
+    -->
+
+</launch>

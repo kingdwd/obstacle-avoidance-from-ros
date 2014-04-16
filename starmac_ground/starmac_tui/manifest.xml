@@ -1,0 +1,20 @@
+<package>
+  <description brief="starmac_tui">
+
+     starmac_tui
+
+  </description>
+  <author>bouffard</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/starmac_tui</url>
+
+  <depend package="rospy"/>
+  <depend package="rosgraph_msgs"/>
+  <depend package="flyer_controller"/>
+  <depend package="nav_msgs"/>
+  <depend package="asctec_hl_comm"/>
+
+</package>
+
+

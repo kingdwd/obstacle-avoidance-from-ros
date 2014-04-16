@@ -1,0 +1,21 @@
+<launch>
+  <arg name="dummy_joystick" default="false"/>
+  <arg name="soft_joystick" default="false"/>
+
+  <node if="$(arg dummy_joystick)" pkg="flyer_controller" type="joy_dummy" name="joy_dummy" args="_publish_rate=50" machine="local" launch-prefix="xterm -e">
+    <param name="go_operational" value="false" type="bool"/>
+    <param name="twiddle_period" value="2.0" type="double"/>
+  </node>
+
+  <group unless="$(arg dummy_joystick)">
+    <node unless="$(arg soft_joystick)" pkg="joy" type="joy_node" name="joy" machine="local">
+      <param name="autorepeat_rate" type="double" value="20"/>
+      <param name="deadzone" type="double" value="0.0"/>
+    </node>
+    
+    <node if="$(arg soft_joystick)" pkg="starmac_gui" type="soft_joystick.py" name="joy" machine="local">
+    </node>
+    
+  </group>
+
+</launch>

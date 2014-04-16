@@ -1,0 +1,23 @@
+<launch>
+  <arg name="flyer_name" default="$(env FLYER_NAME)" />
+  <arg name="flyer_machine" default="$(arg flyer_name)" />
+
+  <!-- MACHINE DEFINITIONS -->
+  <group>
+    <include file="$(find flyer_common)/launch/machines/local.xml" />
+    <include file="$(find flyer_common)/launch/machines/lab_machines.xml" />
+    <include
+      file="$(find starmac_robots_asctec)/launch/machines/pelicans.xml" />
+  </group>
+
+  <group>
+  
+
+    <include file="$(find asctec_hl_interface)/launch/fcu.launch">
+      <arg name="machine" value="$(arg flyer_machine)" />
+    </include>
+
+  </group>
+
+
+</launch>

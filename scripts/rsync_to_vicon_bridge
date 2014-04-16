@@ -1,0 +1,2 @@
+#!/bin/bash
+rsync -az --progress --exclude-from=${HOME}/ros/starmac-ros-pkg/scripts/rsync-exclude ${HOME}/ros/ ${VICON_BRIDGE_HOSTNAME}:ros/

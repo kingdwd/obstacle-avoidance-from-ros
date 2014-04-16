@@ -1,0 +1,42 @@
+<launch>
+    <arg name="nodelet_manager" default="manager"/>
+    <arg name="machine" default=""/>
+    <node name="asctec_hl_interface_adapter" pkg="nodelet" type="nodelet" output="screen" 
+          args="load starmac_robots_asctec/AscTecHLInterfaceAdapterNodelet $(arg nodelet_manager)"
+          clear_params="true"
+          machine="$(arg machine)">
+      <rosparam>
+      # Thrust
+      thrust_mult: 1.0
+      nominal_thrust: 14.0 # set it elsewhere for flyer-specific
+      max_thrust: 18.0 # set it elsewhere for flyer-specific
+      thrust_autoadjust: true # automatically scale thrust based on roll/pitch
+      # Altitude controller gains
+      alt_KP: 6.0 # N/m
+      alt_KI: 4.0 # N per meter-second
+      alt_KD: 6.0 # N per m/s
+      alt_KDD: 0.5 # N per m/s/s
+      alt_Ilimit: 0.1 # N
+      accel_bias: 9.565 # N, empirical
+      # Yaw controller gains
+      yaw_KP: 10.0 # deg/s per deg
+      yaw_KI: 1.0 # deg/s per deg-second
+      yaw_KD: 10.0 #deg/s per deg/s
+      yaw_Ilimit: 50.0 # deg/s
+      yaw_rate_limit: 3000.0 # deg/s
+      # "Land Now" params
+      land_now_thrust_decrease_rate: 3.0 # N/s
+      land_now_min_thrust_ratio: 0.75
+      # Trim
+      #roll_trim: -0.8 # deg
+      #pitch_trim: 1.5 # deg
+      # Yaw offset
+      yaw_offset: 0 # deg
+      # Slew rate limiting:
+      roll_slew_rate_limit: 40 # deg/s
+      pitch_slew_rate_limit: 40 # deg/s
+      yaw_slew_rate_limit: 2000 # deg/s
+      alt_slew_rate_limit: 1.0 # m/s
+      </rosparam>
+    </node>
+</launch>

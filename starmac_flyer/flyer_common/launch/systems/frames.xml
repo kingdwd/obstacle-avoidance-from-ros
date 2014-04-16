@@ -1,0 +1,16 @@
+<launch>
+<!-- Frames common to all flyers/launchfiles -->
+<rosparam>
+frames/enu_to_ned: {
+    parent: /enu,
+    child: /ned,
+    translation: [0, 0, 0],
+    rotation: [90, 0, 180],
+    rot_type: euler_rzyx, # euler_abcd, matrix, or quaternion
+                          # where a = r or s (rotating or static)
+                          # and abc is a permutation of x, y, z denoting order
+                          # of rotation. Eg. euler_rzyx is usual yaw-pitch-roll
+    rot_unit: deg, # deg, rad, or blank
+    }
+</rosparam>
+</launch>

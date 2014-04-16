@@ -1,0 +1,28 @@
+<package>
+  <description brief="flyer_est">
+
+    State estimation.
+
+  </description>
+  <author>Patrick Bouffard</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/flyer_est</url>
+  <depend package="tf"/>
+  <depend package="geometry_msgs"/>
+  <depend package="diagnostic_updater"/>
+  <depend package="nav_msgs"/>
+  <depend package="nodelet"/>
+  <depend package="pluginlib"/>
+  <!--depend package="eigen"/--> <!-- not needed as of Fuerte (Electric?)-->
+
+  <!-- depend package="common_rosdeps"/ --> <!-- not needed as of Fuerte (?)-->
+  <rosdep name="eigen"/>
+
+  <export>
+    <nodelet plugin="${prefix}/flyer_est_nodelets.xml"/>
+  </export>
+
+</package>
+
+

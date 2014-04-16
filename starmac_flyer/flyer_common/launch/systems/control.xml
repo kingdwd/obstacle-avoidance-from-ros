@@ -1,0 +1,108 @@
+<launch>
+  <arg name="machine" default="local"/>
+  <arg name="max_alt_cmd" default="1.5"/>
+  <arg name="min_alt_cmd" default="0.16"/>
+  <arg name="teleop_use_udp" default="true"/>
+  <arg name="teleop_joy_topic" default="fcu/joy"/>
+  <arg name="nodelet_manager" default="manager"/>
+  <arg name="nodelets_standalone" default="false"/>
+
+  <arg if="$(arg nodelets_standalone)" name="nodelet_arg1" value="standalone" />
+  <arg if="$(arg nodelets_standalone)" name="nodelet_arg3" value="" />
+  <arg unless="$(arg nodelets_standalone)" name="nodelet_arg1" value="load" />
+  <arg unless="$(arg nodelets_standalone)" name="nodelet_arg3" value="$(arg nodelet_manager) --no-bond" />
+  
+  
+  <!-- for debugging: 
+      launch-prefix="xterm -e gdb -x ~/gdbrun -args" 
+       or:  
+      launch-prefix="screen -d -m gdb -x ~/gdbrun -args" -->
+  <!-- CONTROLLER -->
+
+  <group>
+    
+    <node pkg="nodelet" type="nodelet" name="controller" 
+          args="$(arg nodelet_arg1) flyer_controller/Controller $(arg nodelet_arg3)" 
+          machine="$(arg machine)"/>
+    <remap from="teleop_flyer/estop" to="asctec/ESTOP"/>
+    <remap from="teleop_flyer/controller_cmd" to="controller/cmd"/>
+    
+    <node name="teleop_flyer" pkg="nodelet" type="nodelet" 
+          args="$(arg nodelet_arg1) flyer_controller/TeleopFlyer $(arg nodelet_arg3)" 
+          machine="$(arg machine)">
+      <param name="max_interval" value="0.75"/>
+      <param name="use_udp" value="$(arg teleop_use_udp)"/>
+      <param name="yaw_deadband" value="0.25"/>
+      <remap from="~joy" to="$(arg teleop_joy_topic)"/>
+    </node>
+    
+    <group>
+
+      <!-- CONTROL MODES -->
+      <node name="control_mode_idle" pkg="nodelet" type="nodelet" 
+            args="$(arg nodelet_arg1) flyer_controller/ControlModeIdle $(arg nodelet_arg3)" 
+            machine="$(arg machine)">
+      </node>
+      <node name="control_mode_attitude" pkg="nodelet" type="nodelet" 
+            args="$(arg nodelet_arg1) flyer_controller/ControlModeAttitude $(arg nodelet_arg3)" 
+            machine="$(arg machine)">
+        <rosparam>
+          external_command_frame: false
+          external_frame_heading: 0.0
+          max_roll_cmd: 20
+          max_pitch_cmd: 20
+          max_yaw_rate_cmd: 50
+          control_output_rate: 40
+          </rosparam>
+          <param name="max_alt_cmd" value="$(arg max_alt_cmd)"/>
+          <param name="min_alt_cmd" value="$(arg min_alt_cmd)"/>
+      </node>
+      <node name="control_mode_hover" pkg="nodelet" type="nodelet"
+            args="$(arg nodelet_arg1) flyer_controller/ControlModeHover $(arg nodelet_arg3)" 
+            machine="$(arg machine)">
+        <rosparam>
+          KP: 30.0
+          KI: 10.0
+          KD: 40.0
+          Ilimit: 5.0
+          control_output_rate: 40
+          waypoint_speed: 1.0
+          external_command_frame: true
+          external_frame_heading: 0.0
+          max_yaw_rate_cmd: 100
+          #direct_thrust_control: true
+          north_cmd_max: 1.5
+          north_cmd_min: -1.5
+          east_cmd_max: 2.5
+          east_cmd_min: -2.5
+          </rosparam>
+          <param name="max_alt_cmd" value="$(arg max_alt_cmd)"/>
+          <param name="min_alt_cmd" value="$(arg min_alt_cmd)"/>
+      </node>
+      <node name="control_mode_autosequence" pkg="nodelet" type="nodelet" 
+            args="$(arg nodelet_arg1) flyer_controller/ControlModeAutosequence $(arg nodelet_arg3)" 
+            machine="$(arg machine)">
+        <rosparam>
+          KP: 30.0
+          KI: 5.0
+          KD: 40.0
+          Ilimit: 4.0
+          control_output_rate: 40
+          waypoint_speed: 0.20
+          reached_tolerance: 0.05
+          reached_tolerance_yaw: 10.0
+          waypoint_update_rate: 20
+          </rosparam>
+          <param name="max_alt_cmd" value="$(arg max_alt_cmd)"/>
+          <param name="min_alt_cmd" value="$(arg min_alt_cmd)"/>
+      </node>
+    </group>
+      
+    <!-- CONTROL MODE MUX -->
+    <node name="controller_mux" pkg="nodelet" type="nodelet" 
+            args="$(arg nodelet_arg1) starmac_tools/MuxNodelet $(arg nodelet_arg3)" 
+            machine="$(arg machine)">
+    </node>
+          
+  </group>
+</launch>

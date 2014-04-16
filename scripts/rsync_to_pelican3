@@ -1,0 +1,2 @@
+#!/bin/bash
+rsync -az --exclude-from=${HOME}/ros/starmac-ros-pkg/scripts/rsync-exclude-to-pelican --progress ${HOME}/ros/ pelican3:ros/

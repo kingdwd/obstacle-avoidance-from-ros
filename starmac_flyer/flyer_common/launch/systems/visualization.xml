@@ -1,0 +1,14 @@
+<launch>
+  <arg name="subscriber_topic_prefix" default=""/>
+  <arg name="odom_topic" default="estimator/output"/>
+  <arg name="vcg_file" default="$(find starmac_viz)/flyer_viz.vcg"/>
+  <node pkg="starmac_viz" type="flyer_viz.py" name="flyer_viz">
+    <param name="subscriber_topic_prefix" value="$(arg subscriber_topic_prefix)"/>
+    <param name="publish_freq" value="15.0"/>
+    <remap from="~odom" to="$(arg subscriber_topic_prefix)$(arg odom_topic)"/>
+  </node>
+      
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(arg vcg_file)">
+  </node>
+
+</launch>

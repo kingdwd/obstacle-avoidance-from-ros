@@ -1,0 +1,8 @@
+<library path="lib/libstarmac_tools">
+  <class name="starmac_tools/MuxNodelet" type="MuxNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+      Nodelet-ized mux
+    </description>
+  </class>
+
+</library>

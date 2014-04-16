@@ -1,0 +1,264 @@
+/*********************************************************************
+ * Software License Agreement (BSD License)
+ *
+ *  Copyright (c) 2010, UC Regents
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of the University of California nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
+#include "flyer_controller/control_mode.h" // This class' header
+#include "flyer_controller/control_modes.h" // srv
+//using namespace flyer_controller;
+namespace flyer_controller
+{
+
+std::string ControlMode::stateToString(ControlModeTypes::ControlModeState t)
+{
+  switch (t)
+  {
+    case ControlModeTypes::OFF:
+      return "OFF";
+    case ControlModeTypes::ERROR:
+      return "ERROR";
+    case ControlModeTypes::IDLE:
+      return "IDLE";
+    case ControlModeTypes::STANDBY:
+      return "STANDBY";
+    case ControlModeTypes::ACTIVE:
+      return "ACTIVE";
+  }
+  return "Unknown";
+}
+
+void ControlMode::onInit()
+{
+  NODELET_INFO("ControlMode onInit() called");
+  nh = getNodeHandle();
+  nh_priv = getPrivateNodeHandle();
+
+  // Diagnostics
+  diag_updater.add(getName() + " status", this, &ControlMode::diagnostics);
+  diag_updater.setHardwareID("none");
+  diag_updater.force_update();
+
+  // Parameters
+  nh_priv.param("status_report_rate", status_report_rate, status_report_rate);
+  nh_priv.param("control_output_rate", control_output_rate, control_output_rate);
+  nh_priv.param("event_driven", event_driven, event_driven);
+  CHECK_PARAMETER((status_report_rate > 0), "parameter value out of range");
+  CHECK_PARAMETER((control_output_rate > 0), "parameter value out of range");
+
+  // Publishers
+  control_mode_status_pub = nh_priv.advertise<control_mode_status> ("status", 1, true);
+}
+
+ControlMode::ControlMode() :
+  status_report_rate(5), control_output_rate(10),
+      event_driven(false), //
+      state(ControlModeTypes::OFF), ready(false), got_first_state(false), seen_max_alt(false), seen_min_alt(false),
+      got_first_joy(false), latest_alt_cmd(0), state_updated(false), state_count(0), control_count(0)
+{
+}
+
+///\brief Publishes diagnostics and status
+void ControlMode::diagnostics(diagnostic_updater::DiagnosticStatusWrapper& stat)
+{
+  int status;
+  status = ((state != ControlModeTypes::ERROR) ? diagnostic_msgs::DiagnosticStatus::OK
+      : diagnostic_msgs::DiagnosticStatus::ERROR);
+  stat.summary(status, stateToString(state));
+  stat.add("ready", ready);
+  stat.add("info", info);
+  stat.add("state_count", state_count);
+  stat.add("control_count", control_count);
+}
+
+void ControlMode::requestRegistration(const std::string& mode_name, double wait_time)
+{
+  reg_timer = nh.createTimer(ros::Duration(0.01),
+                             boost::bind(&ControlMode::requestRegistration2, this, _1, mode_name, wait_time), true);
+}
+
+void ControlMode::requestRegistration2(const ros::TimerEvent& event, const std::string& mode_name, double wait_time)
+{
+  // Service Client
+  NODELET_INFO("Waiting %f seconds before trying to register..", wait_time);
+  ros::Duration d(wait_time);
+  d.sleep();
+  NODELET_INFO("Waiting for controller/control_modes service...");
+  info = "Waiting for controller/control_mode service...";
+  ros::service::waitForService("controller/control_modes"); // blocks until service available, no timeout
+  info = "registering service...";
+  control_modes register_service;
+  register_service.request.request = "register " + mode_name + " " + getName(); //ros::this_node::getName();
+  bool registered = ros::service::call("controller/control_modes", register_service);
+  if (registered)
+  {
+    if (register_service.response.response == "success")
+    {
+      NODELET_INFO_STREAM("Successfully registered control mode " << mode_name);
+      info = "control mode registered";
+      startDataFlow();
+    }
+    else
+    {
+      NODELET_ERROR_STREAM ("Control mode registration failed, response: '" << register_service.response.response
+          << "', reason: '" << register_service.response.reason << "'");
+      state = ControlModeTypes::ERROR;
+      info = "registration failed";
+    }
+  }
+  else
+  {
+    NODELET_ERROR("Control mode registration service call failed");
+    state = ControlModeTypes::ERROR;
+    info = "registration service call failed";
+  }
+}
+
+ControlMode::~ControlMode()
+{
+  NODELET_INFO("Destructor called");
+}
+
+void ControlMode::startDataFlow()
+{
+  //NODELET_INFO("Setting up publishers, subscribers, and timers..");
+  // Publishers
+  output_pub = nh_priv.advertise<control_mode_output> ("output", 10);
+  // Subscribers
+  control_mode_cmd_sub = nh_priv.subscribe("cmd", 500, &ControlMode::controlModeCmdCallback, this);
+  opercmd_sub = nh.subscribe("teleop_flyer/operator_cmds", 10, &ControlMode::operCmdCallback, this);
+  state_sub = nh.subscribe("odom", 2, &ControlMode::stateCallback, this);
+  // Timers
+  if (not event_driven)
+    output_controls_timer = nh.createTimer(ros::Duration(1 / control_output_rate),
+                                           &ControlMode::outputControlTimerCallback, this);
+  report_status_timer = nh.createTimer(ros::Duration(1 / status_report_rate), &ControlMode::reportStatusTimerCallback,
+                                       this);
+
+  state = ControlModeTypes::IDLE;
+  info = "data flow started";
+
+}
+
+void ControlMode::controlModeCmdCallback(const control_mode_cmdConstPtr& msg)
+{
+  NODELET_DEBUG_STREAM("Heard command: " << msg->cmd);
+  if (msg->cmd == "mode idle")
+  {
+    state = ControlModeTypes::IDLE;
+    info = "";
+  }
+  else if (msg->cmd == "mode standby")
+  {
+    state = ControlModeTypes::STANDBY;
+    info = "";
+  }
+  else if (msg->cmd == "mode active")
+  {
+    if (state == ControlModeTypes::STANDBY)
+    {
+      state = ControlModeTypes::ACTIVE;
+      info = "";
+    }
+    else
+    {
+      NODELET_ERROR("Invalid transition");
+    }
+  }
+  else
+  {
+    NODELET_ERROR_STREAM("Command unknown: " << msg->cmd);
+  }
+}
+
+void ControlMode::operCmdCallback(const starmac_msgs::OperatorCommandsConstPtr& msg)
+{
+  //NODELET_DEBUG_STREAM(__PRETTY_FUNCTION__ << " callback called");
+  latest_opercmd = *msg;
+  if (not got_first_joy)
+    got_first_joy = true;
+}
+
+void ControlMode::stateCallback(const nav_msgs::OdometryConstPtr& msg)
+{
+  //NODELET_DEBUG_STREAM(__PRETTY_FUNCTION__ << " callback called");
+  if (!got_first_state)
+    got_first_state = true;
+  latest_state = *msg;
+  state_updated = true;
+  state_count++;
+  if (event_driven)
+  {
+    control_count++;
+    outputControl();
+  }
+  //NODELET_INFO_STREAM("Got state, z = " << latest_state.pose.pose.position.z);
+}
+
+void ControlMode::reportStatusTimerCallback(const ros::TimerEvent& e)
+{
+  control_mode_statusPtr msg(new control_mode_status);
+  //NODELET_INFO_STREAM(__PRETTY_FUNCTION__);
+  msg->state = state;
+  msg->info = info;
+  msg->ready = ready;
+  control_mode_status_pub.publish(msg);
+  diag_updater.update();
+}
+
+void ControlMode::outputControlTimerCallback(const ros::TimerEvent& e)
+{
+  //NODELET_INFO_STREAM(__PRETTY_FUNCTION__);
+  if (not event_driven)
+  {
+    control_count++;
+    outputControl();
+  }
+  else
+    ROS_FATAL("Code should not get here! Do some debugging!");
+}
+
+void ControlMode::outputControl()
+{
+  control_mode_outputPtr control_out(new control_mode_output);
+  switch (state)
+  {
+    case ControlModeTypes::STANDBY:
+    case ControlModeTypes::ACTIVE:
+      output_pub.publish(control_out);
+      break;
+    default:
+      break;
+  }
+
+}
+
+}// namespace
+

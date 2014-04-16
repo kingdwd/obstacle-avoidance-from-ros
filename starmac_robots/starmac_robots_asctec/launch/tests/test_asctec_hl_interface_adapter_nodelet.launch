@@ -1,0 +1,41 @@
+<launch>
+  <arg name="flyer_name" default="$(env FLYER_NAME)" />
+  <arg name="flyer_machine" default="$(arg flyer_name)" />
+
+  <!-- MACHINE DEFINITIONS -->
+  <group>
+    <include file="$(find flyer_common)/launch/machines/local.xml" />
+    <include file="$(find flyer_common)/launch/machines/lab_machines.xml" />
+    <include
+      file="$(find starmac_robots_asctec)/launch/machines/pelicans.xml" />
+  </group>
+
+  <group ns="$(arg flyer_name)">
+
+    <node pkg="nodelet" type="nodelet" name="manager" args="manager"
+      machine="$(arg flyer_machine)">
+      <rosparam>
+        num_worker_threads: 20
+       </rosparam>
+    </node>
+
+    <group ns="fcu">
+      <include file="$(find asctec_hl_interface)/launch/fcu_nodelet.launch">
+        <arg name="nodelet_manager" value="/$(arg flyer_name)/manager" />
+        <arg name="machine" value="$(arg flyer_machine)" />
+      </include>
+    </group>
+    
+    <include
+      file="$(find starmac_robots_asctec)/launch/systems/asctec_hl_interface_adapter_nodelet.xml">
+      <arg name="nodelet_manager" value="manager" />
+      <arg name="machine" value="$(arg flyer_machine)" />
+    </include>
+
+    <node pkg="rxtools" type="rxconsole" name="rxconsole" machine="local" />
+
+  </group>
+
+
+
+</launch>

@@ -1,0 +1,105 @@
+<launch>
+  <arg name="sim" default="false"/>
+  <arg if="$(arg sim)" name="flyer_name" value="simflyer1"/>
+  <arg unless="$(arg sim)" name="flyer_name" value="$(env FLYER_NAME)"/>
+
+  <include unless="$(arg sim)" file="$(find starmac_robots_asctec)/launch/pelican.launch">
+    <arg name="record_state_and_inputs" value="false"/>
+    <arg name="show_plots" value="true"/>
+    <arg name="standby_modes" value="hover lbc"/>
+    <arg name="external_frame_heading" value="90.0"/>
+  </include>
+
+  <include if="$(arg sim)" file="$(find flyer_common)/launch/bringup_sim.launch">
+    <arg name="record_state_and_inputs" value="true"/>
+    <arg name="standby_modes" value="hover lbc"/>
+  </include>
+
+  <group ns="$(arg flyer_name)">
+    <node pkg="nodelet" type="nodelet" name="control_mode_lbc" args="load camrats_learning_based_control/ControlModeLearningBasedControl manager" machine="$(arg flyer_name)">
+      <param name="dat_filename" value="$(find camrats_learning_based_control)/data/quad.dat"/>
+      <rosparam>
+        external_command_frame: true
+        external_frame_heading: 90.0
+        max_roll_cmd: 20
+        max_pitch_cmd: 20
+        max_yaw_rate_cmd: 50
+        control_output_rate: 40
+        yaw_deadband: 0.5
+        waypoint_speed: 0.5
+        enable_altitude_control: true
+        min_alt_cmd: 0.15
+        max_alt_cmd: 2.0
+      </rosparam>
+
+    </node>
+  
+    <!-- PARAMETER OVERRIDES -->
+    <rosparam>
+      control_mode_attitude: {
+      external_command_frame: true,
+      external_frame_heading: 90
+      }
+      </rosparam>
+    <rosparam>
+      asctec_adapter: {
+      pitch_trim: 1.5, # deg
+      roll_trim: -2 # deg
+      }
+     </rosparam>
+         
+    <param name="asctec_adapter/max_thrust" value="2200"/>
+     
+     
+    <!-- RECORDING -->
+    <node pkg="rosbag" type="rosbag" name="record_bag" args="record -b 64 -o lbc_$(arg flyer_name) 
+                 estimator/output 
+                 asctec/imu 
+                 controller_mux/output
+                 control_mode_lbc/debug
+                 asctec/CTRL_INPUT" machine="$(arg flyer_name)"/>
+      
+    <!--  PLOTTING  -->
+    <node pkg="rosh" type="rosh" name="plot_matrices" args="camrats_learning_based_control/plot_matrices.py --plugins=rosh_base,rosh_common,rosh_geometry"/>
+
+    <node pkg="topic_tools" type="relay" name="relay_lbc_debug" machine="local" args="control_mode_lbc/debug downlink/control_mode_lbc/debug">
+    </node>
+
+
+    <arg name="rxplot_opts" value="-p 60 -b 90 -m . -r 2000 -P"/>
+    <node if="false" pkg="rxtools" type="rxplot" name="plots_controller_lbc" args="
+      downlink/control_mode_lbc/output/roll_cmd:pitch_cmd:yaw_cmd
+      downlink/control_mode_lbc/output/motors_on:alt_cmd
+      $(arg rxplot_opts) -t control_mode_lbc_output"/>
+
+    <node pkg="rxtools" type="rxplot" name="plots_lbc_debug" args="
+      downlink/control_mode_lbc/debug/result:iter
+      downlink/control_mode_lbc/debug/tsolve:state_dt:control_dt
+      downlink/control_mode_lbc/debug/obj
+      $(arg rxplot_opts) -t lbc_debug"/>
+
+    <node pkg="rxtools" type="rxplot" name="plots_lbc_dk" args="
+      downlink/control_mode_lbc/debug/d_k[1]:d_k[3]:d_k[5]:d_k[7]:d_k[8]:d_k[9]
+      $(arg rxplot_opts) -t 'd_kcomponents'"/>
+
+    <node pkg="rxtools" type="rxplot" name="plots_lbc_AkBk" args="
+      downlink/control_mode_lbc/debug/A_k[32]:A_k[33]:A_k[76]:A_k[77]
+      downlink/control_mode_lbc/debug/B_k[9]:B_k[22]:B_k[29]
+      $(arg rxplot_opts) -t 'A_k, B_k components'"/>
+
+    <node pkg="rxtools" type="rxplot" name="plots_lbc_tracking" args="
+      downlink/control_mode_lbc/debug/x_err[0]:x_err[4]:x_err[8]
+      $(arg rxplot_opts) -t 'LBC tracking error'"/>
+
+    <node pkg="starmac_tools" type="quat_to_ypr.py" name="quat_to_ypr">
+      <remap from="quat_to_ypr/odom" to="estimator/output"/>
+    </node>
+
+    <node pkg="rxtools" type="rxplot" name="plots_ypr_cmd_vs_actual" args="
+      downlink/controller_mux/output/yaw_cmd,quat_to_ypr/ypr/angles/ai 
+      downlink/controller_mux/output/pitch_cmd,quat_to_ypr/ypr/angles/aj
+      downlink/controller_mux/output/roll_cmd,quat_to_ypr/ypr/angles/ak
+      $(arg rxplot_opts) -P -t 'ypr cmd vs act'"/>
+
+  </group>
+</launch>

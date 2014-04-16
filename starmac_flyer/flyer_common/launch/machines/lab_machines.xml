@@ -1,0 +1,16 @@
+<launch>
+    
+    <!-- 
+    lab_machines.xml
+    
+    Machine definitions for AscTec Pelicans in Hybrid Systems Lab
+    -->
+     
+    
+    <!-- VICON BRIDGE -->
+    <machine name="vicon-bridge" address="$(env VICON_BRIDGE_HOSTNAME)" 
+             user="$(env USER)" 
+             env-loader="$(env HOME)/ros/starmac-ros-pkg/scripts/env-loader.sh">
+    </machine>
+    
+</launch>

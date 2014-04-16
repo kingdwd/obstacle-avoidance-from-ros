@@ -1,0 +1,37 @@
+<launch>
+  <arg name="odom_topic" default="estimator/output"/>
+  <arg name="topic_prefix" default=""/>
+  <arg name="rxplot_opts" value="-p 60 -b 90 -m . -r 0.5"/>
+  
+  <!-- QUATERNION TO YPR -->
+  <node pkg="starmac_tools" type="quat_to_ypr.py" name="quat_to_ypr"
+      machine="local">
+      <remap from="~odom" to="$(arg topic_prefix)$(arg odom_topic)" />
+  </node>
+  
+  <!-- PLOTTING -->
+  <node pkg="rxtools" type="rxplot" name="plots_controller_mux" args="
+      $(arg topic_prefix)controller_mux/output/roll_cmd:pitch_cmd:yaw_cmd:yaw_rate_cmd
+      $(arg topic_prefix)controller_mux/output/motors_on:alt_cmd
+      $(arg topic_prefix)controller_mux/output/thrust_cmd
+      $(arg rxplot_opts) -P -t controller_mux"/>
+  <node pkg="rxtools" type="rxplot" name="plots_joy" args="
+      joy/axes[0]:axes[1]:axes[2]:axes[3]
+      joy/buttons[0]:buttons[2]:buttons[6]:buttons[8]
+      $(arg rxplot_opts) -P -t joystick"/>
+  <node pkg="rxtools" type="rxplot" name="plots_est" args="
+      $(arg topic_prefix)$(arg odom_topic)/pose/pose/position/x:y:z
+      $(arg topic_prefix)$(arg odom_topic)/twist/twist/linear/x:y:z
+      $(arg rxplot_opts) -P -t 'estimator (linear)'"/>
+  <node pkg="rxtools" type="rxplot" name="plots_est2" args="
+      $(arg topic_prefix)$(arg odom_topic)/pose/pose/orientation/x:y:z:w
+      $(arg topic_prefix)$(arg odom_topic)/twist/twist/angular/x:y:z
+      $(arg rxplot_opts) -P -t 'estimator (angular)'"/>
+  <node pkg="rxtools" type="rxplot" name="plots_ypr_cmd_vs_actual" args="
+        $(arg topic_prefix)controller_mux/output/yaw_cmd,quat_to_ypr/ypr/angles/ai 
+        $(arg topic_prefix)controller_mux/output/pitch_cmd,quat_to_ypr/ypr/angles/aj
+        $(arg topic_prefix)controller_mux/output/roll_cmd,quat_to_ypr/ypr/angles/ak
+        $(arg rxplot_opts) -P -t 'ypr cmd vs act'" />
+      
+
+</launch>

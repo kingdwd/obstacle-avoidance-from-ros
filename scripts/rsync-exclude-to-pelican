@@ -1,0 +1,11 @@
+docs
+.git
+.bzr
+*.pyc
+.svn
+*.bag
+*.mat
+*.tar.gz
+.hg
+lbmpc_repo/papers
+*.gz

@@ -1,0 +1,18 @@
+# env var settings for different flyers
+function viper_pelican {
+        if [ $# -ne 1 ]
+        then
+                echo "Usage: viper_pelican [flyer_hostname]"            
+                echo "e.g.: viper_pelican pelican1"
+        else
+                export ROS_HOSTNAME=$(hostname)
+                export ROS_IP=$(ifconfig  | grep 'inet addr:'| grep -v '127.0.0.1' | cut -d: -f2 | awk '{ print $1}')
+                export ROS_MASTER_URI=http://${1}:11311
+                export FLYER_NAME=${1}
+                export PELICAN=${1}
+                export | grep ROS
+                echo FLYER_NAME=${FLYER_NAME}
+                echo PELICAN=${PELICAN}
+        fi
+}
+

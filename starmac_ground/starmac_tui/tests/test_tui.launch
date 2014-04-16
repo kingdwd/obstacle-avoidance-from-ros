@@ -1,0 +1,5 @@
+<launch>
+
+    <node pkg="starmac_tui" type="tui.py" name="starmac_tui" launch-prefix="xterm -fn 10x20 -geometry 40x20 -bg black -fg white -e" required="true"/>
+
+</launch>
